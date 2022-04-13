@@ -133,7 +133,7 @@
     class(TTanhReionization) :: this
     integer, intent(out) :: n_steps
     real(dl), intent(out):: z_start, z_Complete
-    PRINT *,"ARE WE IN TIME STEPS"
+    !PRINT *,"ARE WE IN TIME STEPS"
     if (this%Usereionhist) then
 	    n_steps = nint(50 * this%timestep_boost)
 	    z_start = this%zi(1)! this%redshift + this%delta_redshift*8!(2.*this%zi(this%rebins)-this%zi(this%rebins-1))!this%redshift + this%delta_redshift*8
@@ -151,7 +151,7 @@
     class(TIniFile), intent(in) :: Ini
 
     this%Reionization = Ini%Read_Logical('reionization')
-    PRINT *,"ARE WE PARAMETERIZING?"
+    !PRINT *,"ARE WE PARAMETERIZING?"
     if (this%Reionization) then
 
         this%use_optical_depth = Ini%Read_Logical('re_use_optical_depth')
