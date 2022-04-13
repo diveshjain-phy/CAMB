@@ -1,3 +1,5 @@
+Updates: Updated to take in an array of ionization fraction and redshift (150 bins for current usage).
+
 ===================
 CAMB
 ===================
