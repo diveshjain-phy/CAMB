@@ -1,7 +1,7 @@
 from .baseconfig import F2003Class, fortran_class
-from ctypes import c_bool, c_double, POINTER, byref, c_void_p
-
-
+from ctypes import c_bool, c_double, POINTER, byref, c_void_p , c_int,c_float
+import numpy as np
+import ctypes
 class ReionizationModel(F2003Class):
     """
     Abstract base class for reionization models.
@@ -30,7 +30,12 @@ class TanhReionization(ReionizationModel):
         ("tau_solve_accuracy_boost", c_double, "Accuracy boosting parameter for solving for z_re from tau"),
         ("timestep_boost", c_double,
          "Accuracy boosting parameter for the minimum number of time sampling steps through reionization"),
-        ("max_redshift", c_double, "Maxmimum redshift allowed when mapping tau into reionization redshift")]
+        ("max_redshift", c_double, "Maxmimum redshift allowed when mapping tau into reionization redshift"),
+        ("Usereionhist", c_bool, "Whether to include reionization history"),
+        ("rebins",c_int,"number of reionization redshiftbins"),
+        ("xei",c_double*150,"redshift evolution of ionization function"),
+        ("zi",c_double*150,"redshift bins"),
+        ("taui",c_double*150,"optical depth bins")]
 
     _fortran_class_module_ = 'Reionization'
     _fortran_class_name_ = 'TTanhReionization'
@@ -50,8 +55,32 @@ class TanhReionization(ReionizationModel):
         if delta_redshift is not None:
             self.delta_redshift = delta_redshift
         return self
+        
+        
+    def set_zreix(self, zrei,tau,Usereionhist,rebins,xei,zi,taui,delta_redshift=None):
+        """
+        Set the mid-point reionization redshift
 
-    def set_tau(self, tau, delta_redshift=None):
+        :param zrei: mid-point redshift
+        :param delta_redshift:  delta z for reionization
+        :return:  self
+        """
+        zitype=c_double*150#zi=zi.ctypes.data_as(ctypes.POINTER(ctypes.c_double))        #xei=xei.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+        zi=zitype(*zi.tolist())#.tolist()
+        xei=zitype(*xei.tolist())
+        taui=zitype(*taui.tolist())
+        self.redshift = zrei
+        self.Usereionhist=True
+        self.rebins=rebins
+        self.xei=xei
+        self.zi=zi
+        self.taui=taui
+        self.use_optical_depth = False
+        self.optical_depth = tau
+        self.delta_redshift = delta_redshift
+        return self
+
+    def set_tau(self, tau,delta_redshift=None):
         """
         Set the optical depth
 
@@ -59,12 +88,37 @@ class TanhReionization(ReionizationModel):
         :param delta_redshift: delta z for reionization
         :return: self
         """
+        self.Usereionhist=False
         self.use_optical_depth = True
         self.optical_depth = tau
         if delta_redshift is not None:
             self.delta_redshift = delta_redshift
         return self
+        
+    def set_taux(self,zrei,tau,Usereionhist,rebins,xei,zi,taui,delta_redshift=None):
+        """
+        Set the optical depth
 
+        :param tau: optical depth
+        :param delta_redshift: delta z for reionization
+        :return: self
+        """
+
+        zitype=c_double*150#zi=zi.ctypes.data_as(ctypes.POINTER(ctypes.c_double))        #xei=xei.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+        zi=zitype(*zi.tolist())#.tolist()
+        xei=zitype(*xei.tolist())
+        taui=zitype(*taui.tolist())
+        self.redshift = zrei
+        self.Usereionhist=True
+        self.rebins=rebins
+        self.xei=xei
+        self.zi=zi
+        self.taui=taui
+        self.use_optical_depth = True
+        self.optical_depth = tau
+        self.delta_redshift = delta_redshift
+        return self
+        
     def get_zre(self, params, tau=None):
         """
         Get the midpoint redshift of reionization.
@@ -73,6 +127,7 @@ class TanhReionization(ReionizationModel):
         :param tau: if set, calculate the redshift for optical depth tau, otherwise uses curently set parameters
         :return: reionization mid-point redshift
         """
+        self.Usereionhist=False
         if self.use_optical_depth or tau:
             from .camb import CAMBparams
             assert isinstance(params, CAMBparams)

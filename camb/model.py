@@ -407,7 +407,9 @@ class CAMBparams(F2003Class):
                       neutrino_hierarchy: Union[str, int] = 'degenerate', num_massive_neutrinos=1,
                       mnu=0.06, nnu=constants.default_nnu, YHe: Optional[float] = None, meffsterile=0.0,
                       standard_neutrino_neff=constants.default_nnu, TCMB=constants.COBE_CMBTemp,
-                      tau: Optional[float] = None, zrei: Optional[float] = None, deltazrei: Optional[float] = None,
+                      tau: Optional[float] = None, zrei: Optional[float] = None,
+                      deltazrei:Optional[float]=None,usereionhist:Optional[float]=False,reionbinsx:Optional[int]=150,xeix=np.zeros((150,),dtype=float),
+                      zix=np.zeros((150,),dtype=float),tauix=np.zeros((150,),dtype=float),
                       Alens=1.0, bbn_predictor: Union[None, str, bbn.BBNPredictor] = None, theta_H0_range=(10, 100)):
         r"""
         Sets cosmological parameters in terms of physical densities and parameters (e.g. as used in Planck analyses).
@@ -512,15 +514,19 @@ class CAMBparams(F2003Class):
             if H0 < 1:
                 raise CAMBValueError('H0 is the value in km/s/Mpc, your value looks very small')
             self.H0 = H0
-
-        if tau is not None:
-            if zrei is not None:
-                raise CAMBError('Cannot set both tau and zrei')
-            self.Reion.set_tau(tau, delta_redshift=deltazrei)
-        elif zrei is not None:
-            self.Reion.set_zrei(zrei, delta_redshift=deltazrei)
-        elif deltazrei:
-            raise CAMBError('must set tau if setting deltazrei')
+        if usereionhist:
+            self.Reion.set_zreix(zrei,tau,Usereionhist=usereionhist,rebins=reionbinsx,xei=xeix,zi=zix,taui=tauix,delta_redshift=deltazrei)
+            #self.Reion.set_taux(zrei,tau,Usereionhist=usereionhist,rebins=reionbinsx,xei=xeix,zi=zix,taui=tauix,delta_redshift=deltazrei)
+        else:
+            if tau is not None:
+                if zrei is not None:
+                    raise CAMBError('Cannot set both tau and zrei')
+                else:
+                    self.Reion.set_tau(tau,delta_redshift=deltazrei)
+            elif zrei is not None:
+                self.Reion.set_zrei(zrei, delta_redshift=deltazrei)
+            elif deltazrei:
+                raise CAMBError('must set tau if setting deltazrei')
 
         return self
 
